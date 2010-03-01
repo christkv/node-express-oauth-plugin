@@ -1,4 +1,4 @@
-require.paths.unshift("./spec/lib", "./lib", "./external-libs");
+require.paths.unshift("./spec/lib", "./lib");
 process.mixin(GLOBAL, require("sys"))
 
 sys = require("sys")
