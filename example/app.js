@@ -27,6 +27,9 @@ var db = new mongo.Db('oauth_example', new mongo.Server("127.0.0.1", 27017, {aut
 db.open(function(db) {});
 
 configure(function(){
+  kiwi.seed('haml')
+  kiwi.seed('sass')  
+  
   use(MethodOverride);
   use(ContentLength);
   use(CommonLogger);  

@@ -1,5 +1,6 @@
 // Fetch the library records
-var mongo = require('mongodb');
+var mongo = require('mongodb'),
+  MD5 = require('mongodb/crypto/md5');
 
 /**
   All methods must be implemented for the system to work
@@ -47,7 +48,7 @@ OAuthDataProvider.prototype.validToken = function(accessToken, callback) {
   });
 },
 
-OAuthDataProvider.prototype.validateNotReplay = function(callback, accessToken, timestamp, nonce) {
+OAuthDataProvider.prototype.validateNotReplay = function(accessToken, timestamp, nonce, callback) {
   callback(null, true);
 },
 
