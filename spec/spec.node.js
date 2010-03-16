@@ -1,25 +1,31 @@
-require.paths.unshift("./spec/lib", "./lib");
-process.mixin(GLOBAL, require("sys"))
+require.paths.unshift("./spec/lib");
+require.paths.unshift("./lib");
+var sys = require('sys');
+for (var key in sys)
+	GLOBAL[key] = sys[key];
 
-sys = require("sys")
-oauth = require("oauth/oauth_services");
+// Require the kiwi package manager
+var kiwi = require('kiwi'),
+  express = kiwi.require('express'),
+  sys = require('sys')
 
+// Require the express libary
+require('express');
+require('express/plugins');
+
+// Fetch oauth library
+oauth = require('oauth');
+
+// Require jspec for running tests
 require("jspec")
 
-var posix = require('posix')
+var posix = require('fs')
 
 quit = process.exit
 print = puts
 
 readFile = function(path) {
-  var promise = posix.cat(path, "utf8")
-  var result = ''
-  promise.addErrback(function(){ throw "failed to read file `" + path + "'" })
-  promise.addCallback(function(contents){
-    result = contents
-  })
-  promise.wait()
-  return result
+  return posix.readFileSync(path);
 }
 
 if (process.ARGV[2])
@@ -29,4 +35,3 @@ else
     .exec('spec/spec.oauth_services.js')
 JSpec.run({ reporter: JSpec.reporters.Terminal, failuresOnly: true })
 JSpec.report()
-

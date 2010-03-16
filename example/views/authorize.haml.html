@@ -1,0 +1,16 @@
+%h2 Login
+%form{ method: 'post'}
+  %input{type: 'hidden', name: 'oauth_token', value: token}  
+  %table
+    %tr
+      %td
+        %label= "User name"
+      %td
+        %input{type: 'text', name: 'username'}
+    %tr
+      %td
+        %label= "Password"
+      %td      
+        %input{type: 'password', name: 'password'}
+  .panel
+    %input{type: 'submit', value: 'Authorize'}

@@ -1615,7 +1615,7 @@
   // --- Node.js support
   
   if (typeof GLOBAL === 'object' && typeof exports === 'object') {
-    var posix = require('posix')
+    var posix = require('fs')
     quit = process.exit
     print = require('sys').puts
 
