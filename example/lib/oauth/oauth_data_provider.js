@@ -1,6 +1,8 @@
 // Fetch the library records
 var mongo = require('mongodb'),
-  MD5 = require('mongodb/crypto/md5');
+  MD5 = require('mongodb/crypto/md5'),
+  simplifier = require('simplifier/simplifier'),
+  sys = require('sys');
 
 /**
   All methods must be implemented for the system to work
@@ -29,12 +31,65 @@ OAuthDataProvider.prototype.tokenByConsumer = function(consumerKey, callback) {
   });
 },
 
-OAuthDataProvider.prototype.userByConsumerKey = function(consumerKey, callback) {
-  this.db.collection('oauth_users', function(err, collection) {
+OAuthDataProvider.prototype.applicationByConsumerKey = function(consumerKey, callback) {
+  this.db.collection('oauth_applications', function(err, collection) {
     collection.findOne({'consumer_key':consumerKey}, function(err, user) {
       user != null ? callback(null, user) : callback(new Error("No such user with consumer key: " + consumerKey), null);
     });
   });
+},
+
+OAuthDataProvider.prototype.fetchAuthorizationInformation = function(username, token, callback) {
+  // 
+  // Create Serial flow for simplifier feeding chaining the functions
+  //
+  var fetchApplicationAndUser = new simplifier.SerialFlow(
+    function(callback) {
+      db.collection('oauth_users_request_tokens', function(err, requestCollection) {
+        requestCollection.findOne({'token':token}, function(err, requestDoc) {
+          callback(err, requestDoc);
+        })
+      });
+    }, 
+    
+    function(err, requestDoc, callback) {
+      // Use the request to fetch the associated user
+      db.collection('users', function(err, userCollection) {
+        userCollection.findOne({'username':requestDoc.username}, function(err, userDoc) {
+          callback(err, requestDoc, userDoc);
+        });
+      });      
+    }
+  );
+  
+  // 
+  // Create Serial flow for simplifier feeding chaining the functions
+  //
+  var fetchAllParts = new simplifier.ParallelFlow(
+    // Fetch the application object
+    function(callback) {
+      db.collection('oauth_applications', function(err, applicationCollection) {
+        applicationCollection.findOne({'consumer_key':authResults.consumer_key}, function(err, oauthApplicationDoc) {
+          callback(err, oauthApplicationDoc);
+        });
+      });
+    },    
+    // Fetches the application and user document
+    fetchApplicationAndUser
+  )
+  
+  //
+  //  Execute all the functions and feed results into final method
+  //  
+  new simplifier.Simplifier().execute(
+    // Execute flow
+    fetchAllParts,    
+    // All results coming back are arrays function1 [err, doc] function2 [err, doc1, doc2]
+    function(oauthApplicationDocResult, userDocResult) {          
+      sys.puts(sys.inspect(oauthApplicationDocResult));
+      sys.puts(sys.inspect(userDocResult));
+    }
+  );      
 },
 
 /**
@@ -70,6 +125,24 @@ OAuthDataProvider.prototype.authenticateUser = function(username, password, oaut
       } else {
         callback(new Error("Authentication of user/password failed"), null);
       }
+    });
+  });
+},
+
+/**
+  Associate an application token request with a system user after the user has authenticated, allows for authorization later
+**/
+OAuthDataProvider.prototype.associateTokenToUser = function(username, token, callback) {
+  var self = this;    
+  self.db.collection('users', function(err, collection) {
+    collection.findOne({'username':username}, function(err, user) {
+      // Locate the token
+      self.db.collection('oauth_users_request_tokens', function(err, requestCollection) {
+        requestCollection.findOne({'token': token}, function(err, requestTokenDoc) {
+          requestTokenDoc['username'] = username;
+          requestCollection.save(requestTokenDoc, callback);
+        });
+      });
     });
   });
 },

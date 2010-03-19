@@ -21,10 +21,10 @@ var mongo = require('mongodb'),
 // Create the connection
 new mongo.Db('oauth_example', new mongo.Server("127.0.0.1", 27017, {}, {})).open(function(db) {
   // fetch a user
-  db.collection('oauth_users', function(err, collection) {
+  db.collection('oauth_applications', function(err, collection) {
     collection.findOne({'consumer_key':'key'}, function(err, doc) {
       if(doc == null) {
-        collection.save({'consumer_key':'key', 'secret':'secret'}, function(err, docs) {});              
+        collection.save({'consumer_key':'key', 'secret':'secret', 'title':'Wonderbar app', 'description':'A wonderful application that does nothing'}, function(err, docs) {});              
       }
     });    
   });	    

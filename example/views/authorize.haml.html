@@ -1,16 +1,16 @@
-%h2 Login
+%h2 Authorize the Application
 %form{ method: 'post'}
   %input{type: 'hidden', name: 'oauth_token', value: token}  
   %table
     %tr
-      %td
-        %label= "User name"
-      %td
-        %input{type: 'text', name: 'username'}
+      %td Application Title
+      %td= application.title
     %tr
-      %td
-        %label= "Password"
-      %td      
-        %input{type: 'password', name: 'password'}
+      %td Application Description
+      %td= application.description
+    %tr
+      %td User name
+      %td= user.username
+            
   .panel
     %input{type: 'submit', value: 'Authorize'}
