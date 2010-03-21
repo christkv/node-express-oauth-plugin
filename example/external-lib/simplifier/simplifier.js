@@ -35,26 +35,25 @@ Simplifier.prototype.execute = function() {
   // Execute the function
   this.functions.forEach(function(f) { 
     if(f instanceof SerialFlow) {
-      sys.puts("=============================== -SerialFlow");      
-      f.execute(function() {
-        sys.puts("++++++++++++++++++++++++++ executed serial flow");
+      f.execute(function(results) {
+        self.finalFunction.apply(self, results);
       })
-    } else {    
-      sys.puts("=============================== -Execute function");      
-      f(function() {
-        self.totalNumberOfCallbacks = self.totalNumberOfCallbacks + 1;
-        self.results[f] = Array.prototype.slice.call(arguments);     
-
-        if(self.totalNumberOfCallbacks >= self.functions.length) {
-          // Order the results by the calling order of the functions
-          var finalResults = [];
-          self.functions.forEach(function(f) {
-            finalResults.push(self.results[f]);
-          })
-          // Call the final function passing back all the collected results in the right order 
-          self.finalFunction.apply(self, finalResults);
-        }
-      });      
+    // } else {    
+    //   sys.puts("=============================== -Execute function");      
+    //   f(function() {
+    //     self.totalNumberOfCallbacks = self.totalNumberOfCallbacks + 1;
+    //     self.results[f] = Array.prototype.slice.call(arguments);     
+    // 
+    //     if(self.totalNumberOfCallbacks >= self.functions.length) {
+    //       // Order the results by the calling order of the functions
+    //       var finalResults = [];
+    //       self.functions.forEach(function(f) {
+    //         finalResults.push(self.results[f]);
+    //       })
+    //       // Call the final function passing back all the collected results in the right order 
+    //       self.finalFunction.apply(self, finalResults);
+    //     }
+    //   });      
     }      
   });
 }
@@ -64,44 +63,26 @@ Simplifier.prototype.execute = function() {
 **/
 var SerialFlow = exports.SerialFlow = function(functions) {
   this.functions = Array.prototype.slice.call(arguments, 0);
-  this.totalNumberOfCallbacks = 0
-  this.results = {};
 }
 
 SerialFlow.prototype.execute = function(callback) {  
-  var self = this;
-  this.functions.forEach(function(f) {
-    if(f instanceof ParallelFlow) {
-      // Execute the parallel flow
-      f.execute(function() {
-        sys.puts("finished executing parallel");
-      });
-      sys.puts("=============================== ParallelFlow");
-    } else if(f instanceof SerialFlow) {
-      sys.puts("=============================== SerialFlow");      
-      f.execute(function() {
-        sys.puts("finished executing serial");        
-      });
-    } else {    
-      sys.puts("=============================== Execute function");      
-      sys.puts(f.toString());
-      f(function() {
-        self.totalNumberOfCallbacks = self.totalNumberOfCallbacks + 1;
-        self.results[f] = Array.prototype.slice.call(arguments);     
+  this.serialExecute([], this.functions.splice(0, 1)[0], callback);
+}
 
-        if(self.totalNumberOfCallbacks >= self.functions.length) {
-          // Order the results by the calling order of the functions
-          var finalResults = [];
-          self.functions.forEach(function(f) {
-            finalResults.push(self.results[f]);
-          })
-          // Call the final function passing back all the collected results in the right order 
-          // self.finalFunction.apply(self, finalResults);
-          callback.apply(self, finalResults);
-        }        
-      });    
-    }      
+SerialFlow.prototype.serialExecute = function(values, f, callback) {
+  var self = this;
+  // Add a callback to handle the results
+  values.push(function() {
+    if(self.functions.length > 0) {
+      var nextFunction = self.functions.splice(0, 1)[0];
+      var results = Array.prototype.slice.call(arguments);
+      self.serialExecute(results, nextFunction, callback);           
+    } else {
+      callback(Array.prototype.slice.call(arguments));
+    }
   });
+  // Apply the arguments
+  f.apply(self, values);
 }
 
 /**
