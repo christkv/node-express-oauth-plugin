@@ -52,18 +52,32 @@ SerialFlow.prototype.execute = function(callback) {
 
 SerialFlow.prototype.serialExecute = function(values, f, callback) {
   var self = this;
-  // Add a callback to handle the results
-  values.push(function() {
-    if(self.functions.length > 0) {
-      var nextFunction = self.functions.splice(0, 1)[0];
-      var results = Array.prototype.slice.call(arguments);
-      self.serialExecute(results, nextFunction, callback);           
-    } else {
-      callback(Array.prototype.slice.call(arguments));
-    }
-  });
-  // Apply the arguments
-  f.apply(self, values);
+  
+  // If this is a parallel flow
+  if(f instanceof ParallelFlow) {
+    f.execute(function() {
+      if(self.functions.length > 0) {
+        var nextFunction = self.functions.splice(0, 1)[0];
+        var results = Array.prototype.slice.call(arguments)[0];
+        self.serialExecute(results, nextFunction, callback);           
+      } else {
+        callback(Array.prototype.slice.call(arguments));        
+      }
+    });
+  } else {
+    // Add a callback to handle the results
+    values.push(function() {
+      if(self.functions.length > 0) {
+        var nextFunction = self.functions.splice(0, 1)[0];
+        var results = Array.prototype.slice.call(arguments);
+        self.serialExecute(results, nextFunction, callback);           
+      } else {
+        callback(Array.prototype.slice.call(arguments));
+      }
+    });
+    // Execute the code
+    f.apply(self, values);    
+  }  
 }
 
 /**
@@ -80,13 +94,23 @@ ParallelFlow.prototype.execute = function(callback) {
   var self = this;
     
   for(var i = 0; i < this.functions.length; i++) {
-    this.functions[i](function() {
-      self.results[i] = Array.prototype.slice.call(arguments);
-      self.numberOfCallsPerformed = self.numberOfCallsPerformed + 1;
-      if(self.numberOfCallsPerformed >= self.functions.length) {
-        callback(self.results);
-      }
-    });
+    if(this.functions[i] instanceof SerialFlow) {
+      this.functions[i].execute(function() {
+        self.results[i] = Array.prototype.slice.call(arguments)[0];
+        self.numberOfCallsPerformed = self.numberOfCallsPerformed + 1;        
+        if(self.numberOfCallsPerformed >= self.functions.length) {
+          callback(self.results);
+        }
+      })
+    } else {
+      this.functions[i](function() {
+        self.results[i] = Array.prototype.slice.call(arguments);
+        self.numberOfCallsPerformed = self.numberOfCallsPerformed + 1;
+        if(self.numberOfCallsPerformed >= self.functions.length) {
+          callback(self.results);
+        }
+      });      
+    }
   }
 }
 

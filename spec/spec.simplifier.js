@@ -17,7 +17,7 @@ describe 'Simplifier'
         function(callback) { callback(null, {doc:'requestDoc'}); }, 
         function(err, requestDoc, callback) { callback(null, {doc:'userDoc'}); }
       );
-
+  
       //
       //  Execute all the functions and feed results into final method
       //  
@@ -80,4 +80,92 @@ describe 'Simplifier'
       tick(100);          
     end
   end 
+  
+  /**
+    Combined Parallel and Serial flow execution
+  **/
+  describe 'Combinations of serial and parallel flows'
+    it 'Should correctly execute a serial flow inside of a parallel flow'
+      // Keep track of running
+      var running = true;
+      // Define a serial flow
+      var serialFlow = new simplifier.SerialFlow(
+        function(callback) { callback(null, {doc:'requestDoc'}); }, 
+        function(err, requestDoc, callback) { callback(null, {doc:'userDoc'}); }
+      );
+      // Define a parallel flow
+      var parallelFlow = new simplifier.ParallelFlow(
+        serialFlow, 
+        function(callback) { callback(null, {doc:'bangBangDoc'}); }
+      );
+      
+      //
+      //  Execute all the functions and feed results into final method
+      //  
+      new simplifier.Simplifier().execute(
+        parallelFlow,
+        // All results coming back are arrays function1 [err, doc] function2 [err, doc1, doc2]
+        function(userDocResult, bangBangDocResult) { 
+          userDocResult[0].should.be_null
+          userDocResult[1].doc.should.eql "userDoc"
+          
+          bangBangDocResult[0].should.be_null
+          bangBangDocResult[1].doc.should.eql "bangBangDoc"
+
+          // Signal test finished
+          running = false;
+        }
+      );        
+    end
+
+    it 'Should correctly execute a parallel flow inside of a serial flow'
+      // Keep track of running
+      var running = true;
+      // Define a parallel flow
+      var parallelFlow = new simplifier.ParallelFlow(
+        function(callback) { callback(null, {doc:'requestDoc'}); }, 
+        function(callback) { callback(null, {doc:'userDoc'}); }
+      );
+      
+      // Define a serial flow
+      var serialFlow = new simplifier.SerialFlow(
+        parallelFlow, 
+        function(requestDoc, userDoc, callback) { callback(null, userDoc, requestDoc); }
+      );
+      
+      //
+      //  Execute all the functions and feed results into final method
+      //  
+      new simplifier.Simplifier().execute(
+        serialFlow,
+        // All results coming back are arrays function1 [err, doc] function2 [err, doc1, doc2]
+        function(err, userDocResult, bangBangDocResult) { 
+          userDocResult[0].should.be_null
+          userDocResult[1].doc.should.eql "userDoc"
+          
+          bangBangDocResult[0].should.be_null
+          bangBangDocResult[1].doc.should.eql "requestDoc"
+
+          // Signal test finished
+          running = false;
+        }
+      );        
+    end
+  end
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
