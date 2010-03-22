@@ -44,7 +44,7 @@ describe 'Simplifier'
   
   /** 
     Parallel flow execution
-  **/  
+    **/  
   describe 'Parallel Flow'
     it 'Should Correcly Execute Simple Parallel Flow'
       // Keep track of running
@@ -52,7 +52,7 @@ describe 'Simplifier'
       // Define a parallel flow
       var parallelFlow = new simplifier.ParallelFlow(
         function(callback) { callback(null, {doc:'requestDoc'}); }, 
-        function(err, requestDoc, callback) { callback(null, {doc:'userDoc'}); }
+        function(callback) { callback(null, {doc:'userDoc'}); }
       );
   
       //
@@ -63,13 +63,10 @@ describe 'Simplifier'
         parallelFlow,
         // All results coming back are arrays function1 [err, doc] function2 [err, doc1, doc2]
         function(requestDocResult, userDocResult) { 
-          requestDocResult.err.should.be_null
-          requestDocResult.results.length.should.eql 1
-          requestDocResult.results[0].doc.should.eql "requestDoc"          
-                   
-          userDocResult.err.should.be_null
-          userDocResult.results.length.should.eql 1
-          userDocResult.results[0].doc.should.eql "userDoc"
+          requestDocResult[0].should.be_null
+          requestDocResult[1].doc.should.eql "requestDoc"
+          userDocResult[0].should.be_null
+          userDocResult[1].doc.should.eql "userDoc"
           // Signal test finished
           running = false;
         }

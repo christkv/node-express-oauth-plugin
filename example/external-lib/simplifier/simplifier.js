@@ -1,25 +1,6 @@
 var sys = require('sys');
 
 /**
-  Executor
-**/
-var executorFunction = function(self, f) {
-  if(f instanceof ParallelFlow) {
-    // Execute the parallel flow
-    f.execute(function() {
-      sys.puts("finished executing");
-    });
-    sys.puts("=============================== ParallelFlow");
-  } else if(f instanceof SerialFlow) {
-    sys.puts("=============================== SerialFlow");      
-  } else {    
-    f(function() {
-    });    
-    sys.puts("=============================== Execute function");      
-  }      
-}
-
-/**
   Simplifier code
 **/
 var Simplifier = exports.Simplifier = function(context) {
@@ -34,7 +15,7 @@ Simplifier.prototype.execute = function() {
   var self = this.context != null ? this.context : this;
   // Execute the function
   this.functions.forEach(function(f) { 
-    if(f instanceof SerialFlow) {
+    if(f instanceof SerialFlow || f instanceof ParallelFlow) {
       f.execute(function(results) {
         self.finalFunction.apply(self, results);
       })
@@ -90,7 +71,23 @@ SerialFlow.prototype.serialExecute = function(values, f, callback) {
 **/
 var ParallelFlow = exports.ParallelFlow = function(functions) {
   this.functions = Array.prototype.slice.call(arguments, 0);
+  this.numberOfCallsPerformed = 0;
+  this.results = [];
+  this.indexes = {};
 }
 
-ParallelFlow.prototype.execute = function(callback) {  
+ParallelFlow.prototype.execute = function(callback) {
+  var self = this;
+    
+  for(var i = 0; i < this.functions.length; i++) {
+    this.functions[i](function() {
+      self.results[i] = Array.prototype.slice.call(arguments);
+      self.numberOfCallsPerformed = self.numberOfCallsPerformed + 1;
+      if(self.numberOfCallsPerformed >= self.functions.length) {
+        callback(self.results);
+      }
+    });
+  }
 }
+
+
