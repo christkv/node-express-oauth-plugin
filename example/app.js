@@ -1,27 +1,26 @@
 require.paths.unshift('lib');
 require.paths.unshift('../lib');
-require.paths.unshift('external-lib');
 
 // Require the kiwi package manager
 var kiwi = require('kiwi'),
   express = kiwi.require('express'),
   sys = require('sys'),
-  simplifier = require('simplifier/simplifier');
-
+  querystring = require('querystring');
+  
 // Require the express libary
 require('express');
 require('express/plugins');
 
 // Initialize the seeds  
-kiwi.seed('mongodb-native');
-
-// Fetch the library records
-var mongo = require('mongodb');
+sys.puts(kiwi.seed('mongodb-native'));
+sys.puts(kiwi.seed('simplify'));
 
 // Fetch the oauth library
 var oauth = require('oauth');
+var simplifier = require('simplifier');
 
 // Our provider
+var mongo = require('mongodb');
 var oauth_example = require('oauth/oauth_data_provider');
 
 // Set up a Db and open connection to the mongodb
@@ -34,7 +33,6 @@ configure(function(){
   
   use(MethodOverride);
   use(ContentLength);
-  use(CommonLogger);  
   use(Cookie);
   use(Session);
   use(Flash);

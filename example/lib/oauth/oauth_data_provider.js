@@ -1,7 +1,14 @@
+// Load the kiwi
+var kiwi = require('kiwi');
+
+// Initialize the seeds  
+kiwi.seed('mongodb-native');
+kiwi.seed('simplify');
+
 // Fetch the library records
 var mongo = require('mongodb'),
   MD5 = require('mongodb/crypto/md5'),
-  simplifier = require('simplifier/simplifier'),
+  simplifier = require('simplifier'),
   sys = require('sys');
 
 /**

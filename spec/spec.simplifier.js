@@ -40,6 +40,34 @@ describe 'Simplifier'
       // Trigger mock timer to start the execution
       tick(100);          
     end
+    
+    it 'Should Correctly Execute a set of functions serially'
+      // Keep track of running
+      var running = true;
+      
+      //
+      //  Execute all the functions and feed results into final method
+      //  
+      new simplifier.Simplifier().execute(
+        // Flows to execute
+        function(callback) { callback(null, {doc:'requestDoc'}); }, 
+        function(err, requestDoc, callback) { callback(null, {doc:'userDoc'}); },
+        // All results coming back are arrays function1 [err, doc] function2 [err, doc1, doc2]
+        function(err, userDocResult) {  
+          err.should.be_null
+          userDocResult.doc.should.eql "userDoc"
+          // Signal test finished
+          running = false;
+        }
+      );       
+
+      var intervalId = setInterval(function() {
+        while(running) {}
+        clearInterval(intervalId);
+      }, 100);             
+      // Trigger mock timer to start the execution
+      tick(100);                
+    end
   end
   
   /** 
@@ -150,7 +178,7 @@ describe 'Simplifier'
           running = false;
         }
       );        
-    end
+    end    
   end
 end
 
