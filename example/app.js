@@ -12,8 +12,8 @@ require('express');
 require('express/plugins');
 
 // Initialize the seeds  
-sys.puts(kiwi.seed('mongodb-native'));
-sys.puts(kiwi.seed('simplify'));
+kiwi.seed('mongodb-native');
+kiwi.seed('simplify');
 
 // Fetch the oauth library
 var oauth = require('oauth');
@@ -25,7 +25,7 @@ var oauth_example = require('oauth/oauth_data_provider');
 
 // Set up a Db and open connection to the mongodb
 var db = new mongo.Db('oauth_example', new mongo.Server("127.0.0.1", 27017, {auto_reconnect: true}, {}));
-db.open(function(db) {});
+db.open(function(err, db) {});
 
 configure(function(){
   kiwi.seed('haml')
@@ -33,6 +33,7 @@ configure(function(){
   
   use(MethodOverride);
   use(ContentLength);
+  use(Logger);
   use(Cookie);
   use(Session);
   use(Flash);
@@ -75,49 +76,6 @@ configure(function(){
           user:user
         }                        
       });                                                         
-      
-      
-      // This part of the application authorization process is optional and not covered by the 
-      // oauth plugin. It deals with the authorization of the application key used to generate
-      // the oauth access token
-      
-      // Fetch the application to show the information about the app being authorized
-      // new simplifier.Simplifier().execute(
-      //   function(callback) {
-      //     db.collection('oauth_applications', function(err, applicationCollection) {
-      //       applicationCollection.findOne({'consumer_key':authResults.consumer_key}, function(err, oauthApplicationDoc) {
-      //         callback(err, oauthApplicationDoc);
-      //       });
-      //     });
-      //   },
-      //   
-      //   function(callback) {
-      //     db.collection('oauth_users_request_tokens', function(err, requestCollection) {
-      //       requestCollection.findOne({'token':authResults.token}, function(err, requestDoc) {
-      //         // Use the request to fetch the associated user
-      //         db.collection('users', function(err, userCollection) {
-      //           userCollection.findOne({'username':requestDoc.username}, function(err, userDoc) {
-      //             callback(err, requestDoc, userDoc);
-      //           });
-      //         });
-      //       });
-      //     });          
-      //   },
-      //   
-      //   // All results coming back are arrays function1 [err, doc] function2 [err, doc1, doc2]
-      //   function(oauthApplicationDocResult, userDocResult) {          
-      //     // Render the authorization page
-      //     self.render('authorize.haml.html', {
-      //       locals: {
-      //         flashes: self.flash('info'),
-      //         token: authResults.token,
-      //         verifier: authResults.verifier,
-      //         application:oauthApplicationDocResult[1],
-      //         user:userDocResult[1]
-      //       }                        
-      //     });                                                         
-      //   }
-      // );      
     }
   };
   
@@ -143,63 +101,6 @@ oauth_get('/api/geo/list:format?', function(format) {
   sys.puts("=================== format: " + format);
   // sys.puts(sys.inspect(this));
   this.halt(200, "Done 2");
-});
-
-get('/', function() {  
-  // 
-  //  Create Serial flow for simplifier feeding chaining the functions
-  //
-  var fetchApplicationAndUser = new simplifier.SerialFlow(
-    function(callback) {
-      // db.collection('oauth_users_request_tokens', function(err, requestCollection) {
-      //   requestCollection.findOne({'token':'7866a24bdaf203f509010000'}, function(err, requestDoc) {
-      //     callback(err, requestDoc);
-      //   })
-      // });
-      callback(null, {doc:'requestDoc'});
-    }, 
-    
-    function(err, requestDoc, callback) {
-      // Use the request to fetch the associated user
-      // db.collection('users', function(err, userCollection) {
-      //   userCollection.findOne({'username':'christkv'}, function(err, userDoc) {
-      //     callback(err, requestDoc, userDoc);
-      //   });
-      // });      
-      callback(null, {doc:'userDoc'});
-    }
-  );
-  
-  //
-  //  Define the Parallel flow
-  //
-  var fetchAllParts = new simplifier.ParallelFlow(
-    // Fetch the application object
-    function(callback) {
-      // db.collection('oauth_applications', function(err, applicationCollection) {
-      //   applicationCollection.findOne({'consumer_key':'key'}, function(err, oauthApplicationDoc) {
-      //     callback(err, oauthApplicationDoc);
-      //   });
-      // });
-      callback(null, {doc:'oauthApplicationDoc'});
-    },    
-    // Fetches the application and user document
-    fetchApplicationAndUser
-  )
-  
-  //
-  //  Execute all the functions and feed results into final method
-  //  
-  new simplifier.Simplifier().execute(
-    // Execute flow
-    // fetchAllParts,    
-    fetchApplicationAndUser,
-    // All results coming back are arrays function1 [err, doc] function2 [err, doc1, doc2]
-    function(oauthApplicationDocResult, userDocResult) {          
-      sys.puts(sys.inspect(oauthApplicationDocResult));
-      sys.puts(sys.inspect(userDocResult));
-    }
-  );        
 });
 
 /**

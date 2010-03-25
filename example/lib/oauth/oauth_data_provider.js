@@ -47,12 +47,14 @@ OAuthDataProvider.prototype.applicationByConsumerKey = function(consumerKey, cal
 },
 
 OAuthDataProvider.prototype.fetchAuthorizationInformation = function(username, token, callback) {
+  var self = this;
+  
   // 
   // Create Serial flow for simplifier feeding chaining the functions
   //
   var fetchApplicationAndUser = new simplifier.SerialFlow(
     function(callback) {
-      db.collection('oauth_users_request_tokens', function(err, requestCollection) {
+      self.db.collection('oauth_users_request_tokens', function(err, requestCollection) {
         requestCollection.findOne({'token':token}, function(err, requestDoc) {
           callback(err, requestDoc);
         })
@@ -61,7 +63,7 @@ OAuthDataProvider.prototype.fetchAuthorizationInformation = function(username, t
     
     function(err, requestDoc, callback) {
       // Use the request to fetch the associated user
-      db.collection('users', function(err, userCollection) {
+      self.db.collection('users', function(err, userCollection) {
         userCollection.findOne({'username':requestDoc.username}, function(err, userDoc) {
           callback(err, requestDoc, userDoc);
         });
@@ -75,10 +77,16 @@ OAuthDataProvider.prototype.fetchAuthorizationInformation = function(username, t
   var fetchAllParts = new simplifier.ParallelFlow(
     // Fetch the application object
     function(callback) {
-      db.collection('oauth_applications', function(err, applicationCollection) {
-        applicationCollection.findOne({'consumer_key':authResults.consumer_key}, function(err, oauthApplicationDoc) {
-          callback(err, oauthApplicationDoc);
-        });
+      // locate consumer key by token
+      self.db.collection('oauth_users_request_tokens', function(err, requestCollection) {
+        requestCollection.findOne({'token':token}, function(err, requestDoc) {
+          // Fetch the application
+          self.db.collection('oauth_applications', function(err, applicationCollection) {
+            applicationCollection.findOne({'consumer_key':requestDoc.consumer_key}, function(err, oauthApplicationDoc) {
+              callback(err, oauthApplicationDoc);
+            });
+          });
+        })
       });
     },    
     // Fetches the application and user document
@@ -93,6 +101,7 @@ OAuthDataProvider.prototype.fetchAuthorizationInformation = function(username, t
     fetchAllParts,    
     // All results coming back are arrays function1 [err, doc] function2 [err, doc1, doc2]
     function(oauthApplicationDocResult, userDocResult) {          
+      sys.puts("----------------------------------------------------------------------------------");
       sys.puts(sys.inspect(oauthApplicationDocResult));
       sys.puts(sys.inspect(userDocResult));
     }
@@ -118,7 +127,7 @@ OAuthDataProvider.prototype.authenticateUser = function(username, password, oaut
   var self = this;    
   self.db.collection('users', function(err, collection) {
     var encodedPassword = MD5.hex_md5(password);
-    collection.findOne({'username':username, 'password':encodedPassword}, function(err, user) {
+    collection.findOne({'username':username, 'password':encodedPassword}, function(err, user) {      
       if(user != null) {
         // Update the oauthToken document to signal that key is authenticated
         self.db.collection('oauth_users_request_tokens', function(err, collection) {
