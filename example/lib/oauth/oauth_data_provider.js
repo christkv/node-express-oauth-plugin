@@ -7,10 +7,10 @@ kiwi.seed('simplify');
 
 // Fetch the library records
 var mongo = require('mongodb'),
-  MD5 = require('mongodb/crypto/md5'),
+  MD5 = mongo.MD5,
   simplifier = require('simplifier'),
   sys = require('sys');
-
+  
 /**
   All methods must be implemented for the system to work
 **/
@@ -36,7 +36,7 @@ OAuthDataProvider.prototype.tokenByConsumer = function(consumerKey, callback) {
       token == null ? callback(new Error("No suck token"), null) : callback(null, token);
     });
   });
-},
+}
 
 OAuthDataProvider.prototype.applicationByConsumerKey = function(consumerKey, callback) {
   this.db.collection('oauth_applications', function(err, collection) {
@@ -44,7 +44,7 @@ OAuthDataProvider.prototype.applicationByConsumerKey = function(consumerKey, cal
       user != null ? callback(null, user) : callback(new Error("No such user with consumer key: " + consumerKey), null);
     });
   });
-},
+}
 
 OAuthDataProvider.prototype.fetchAuthorizationInformation = function(username, token, callback) {
   var self = this;
@@ -101,12 +101,10 @@ OAuthDataProvider.prototype.fetchAuthorizationInformation = function(username, t
     fetchAllParts,    
     // All results coming back are arrays function1 [err, doc] function2 [err, doc1, doc2]
     function(oauthApplicationDocResult, userDocResult) {          
-      sys.puts("----------------------------------------------------------------------------------");
-      sys.puts(sys.inspect(oauthApplicationDocResult));
-      sys.puts(sys.inspect(userDocResult));
+      callback(null, oauthApplicationDocResult[1], userDocResult[1]);
     }
   );      
-},
+}
 
 /**
   Validation methods used to check if the tokens and user are valid
@@ -117,14 +115,33 @@ OAuthDataProvider.prototype.validToken = function(accessToken, callback) {
       token == null ? callback(new Error("No suck token"), null) : callback(null, token);
     });
   });
-},
+}
+
+/**
+  Fetch a token by token and verifier (can be used to verify if a token exists)
+**/
+OAuthDataProvider.prototype.tokenByTokenAndVerifier = function(token, verifier, callback) {
+  var self = this;
+  
+  self.db.collection('oauth_users_request_tokens', function(err, collection) {
+    collection.findOne({'token':token, 'verifier':verifier}, function(err, token) {
+      token != null ? callback(err, token) : callback(new Error("No token containing token: " + token + " and verifier: " + verifier), null);
+    })
+  });
+}
 
 OAuthDataProvider.prototype.validateNotReplay = function(accessToken, timestamp, nonce, callback) {
   callback(null, true);
-},
+}
 
 OAuthDataProvider.prototype.authenticateUser = function(username, password, oauthToken, callback) {
   var self = this;    
+  
+  sys.puts("==== OAuthDataProvider.prototype.authenticateUser");
+  sys.puts("username = " + username);
+  sys.puts("password = " + password);
+  sys.puts("oauthToken = " + oauthToken);
+  
   self.db.collection('users', function(err, collection) {
     var encodedPassword = MD5.hex_md5(password);
     collection.findOne({'username':username, 'password':encodedPassword}, function(err, user) {      
@@ -143,7 +160,7 @@ OAuthDataProvider.prototype.authenticateUser = function(username, password, oaut
       }
     });
   });
-},
+}
 
 /**
   Associate an application token request with a system user after the user has authenticated, allows for authorization later
@@ -161,7 +178,7 @@ OAuthDataProvider.prototype.associateTokenToUser = function(username, token, cal
       });
     });
   });
-},
+}
 
 /**
   Generation methods used to create new tokens for the oauth interface
@@ -173,7 +190,7 @@ OAuthDataProvider.prototype.generateRequestToken = function(oauthConsumerKey, oa
       callback(null, doc);
     });
   });
-}, 
+}
 
 OAuthDataProvider.prototype.generateAccessToken = function(oauthToken, callback) {
   var self = this;
@@ -193,7 +210,7 @@ OAuthDataProvider.prototype.generateAccessToken = function(oauthToken, callback)
       });
     });
   });
-},
+}
 
 /**
   Ensures that we avoid multiple entries for tokens

@@ -79,6 +79,13 @@ configure(function(){
     }
   };
   
+  /**
+    Handle the successful authentication and authorization
+  **/
+  var authorizationFinishedProvider = function(err, result) {
+    this.render('authorization_finished.haml.html', {});
+  }
+  
   // *   - request_token_url        'web path for the request token url endpoint, default: /oauth/request_token'
   // *   - authorize_url            'web path for the authorize form, default: /oauth/authorize' (get/post)
   // *   - access_token_url         'web path for the access token url endpoint, default: /oauth/access_token'
@@ -90,6 +97,7 @@ configure(function(){
                           access_token_url:'/oauth/access_token',
                           authenticate_provider:authenticateProvider,
                           authorize_provider:authorizeProvider,
+                          authorization_finished_provider: authorizationFinishedProvider,
                           oauth_provider:new oauth_example.OAuthDataProvider(db)});  
   set('root', __dirname);
 });

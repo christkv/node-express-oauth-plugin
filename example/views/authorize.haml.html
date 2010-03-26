@@ -1,6 +1,7 @@
 %h2 Authorize the Application
 %form{ method: 'post'}
-  %input{type: 'hidden', name: 'oauth_token', value: token}  
+  %input{type: 'hidden', name: 'oauth_token', value: token} 
+  %input{type: 'hidden', name: 'verifier', value: verifier} 
   %table
     %tr
       %td Application Title
