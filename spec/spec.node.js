@@ -37,7 +37,6 @@ if (process.ARGV[2])
   JSpec.exec('spec/spec.' + process.ARGV[2] + '.js')  
 else
   JSpec
-    // .exec('spec/spec.oauth_services.js')
-    .exec('spec/spec.simplifier.js')
+    .exec('spec/spec.oauth_services.js')
 JSpec.run({ reporter: JSpec.reporters.Terminal, failuresOnly: true })
 JSpec.report()
