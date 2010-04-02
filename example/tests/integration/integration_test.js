@@ -119,6 +119,10 @@ function test_correct_no_callback() {
   });  
 }
 
+function test_illegal_call() {
+  testResults.push(test_illegal_call);  
+}
+
 /***********************************************************************************************************
  *
  *  Utility methods used for the tests
@@ -183,15 +187,36 @@ var post = function(urlString, params, headers, callback) {
 ***********************************************************************************************************/
 
 // Execute methods
-var tests = [test_correct_no_callback];
-tests.forEach(function(test) {
-  test();
-})
+var tests = [test_correct_no_callback, test_illegal_call];
+var executionCounter = 0;
 
 // Finish running tests once all are done
 var intervalId = setInterval(function() {
+  if(executionCounter == 0 || executionCounter == testResults.length) {
+    if(executionCounter < tests.length) {
+      tests[executionCounter]();
+      executionCounter = executionCounter + 1;
+    }
+  }
+  
   if(testResults.length == tests.length) {
     clearInterval(intervalId);
   }
 }, 100);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
