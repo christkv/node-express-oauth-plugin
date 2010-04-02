@@ -83,7 +83,17 @@ configure(function(){
     Handle the successful authentication and authorization
   **/
   var authorizationFinishedProvider = function(err, result) {
-    this.render('authorization_finished.haml.html', {});
+    var self = this;
+    sys.puts("var authorizationFinishedProvider = function(err, result) {");
+    sys.puts(sys.inspect(result));
+    
+    this.render('authorization_finished.haml.html', {
+      locals: {
+        flashes: self.flash('info'),
+        token: result.token,
+        verifier: result.verifier
+      }
+    });
   }
   
   // *   - request_token_url        'web path for the request token url endpoint, default: /oauth/request_token'

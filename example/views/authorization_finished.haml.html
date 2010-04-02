@@ -1,1 +1,10 @@
 %h2 Authentication and Authorization Finished, Application can now access
+%input{type: 'hidden', name: 'oauth_verifier', value: verifier} 
+%input{type: 'hidden', name: 'oauth_token', value: token} 
+%table
+  %tr
+    %td Token
+    %td= token
+  %tr
+    %td Verifier
+    %td= verifier

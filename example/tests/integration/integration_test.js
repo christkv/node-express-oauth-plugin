@@ -7,25 +7,123 @@ var kiwi = require('kiwi'),
   sys = require('sys'),
   oauth = require('oauth'),
   querystring = require('querystring'),
-  crypto = require('oauth/crypto/sha1');
+  crypto = require('oauth/crypto/sha1'), 
+  test = require("mjsunit");
 
 // Require the express libary
 require('express');
 require('express/plugins');
 
-// Set up for integration test
-var site = "http://localhost:3000";
-var key = "key";
-var secret = "secret";
-var callback = "http://localhost:9000/callback";
+// Contains all the results
+var testResults = [];
 
-// use(oauth.OAuth, {request_token_url:'/oauth/request_token', 
-//                         authorize_url:'/oauth/authorize',
-//                         access_token_url:'/oauth/access_token',
-//                         authenticate_provider:authenticateProvider,
-//                         authorize_provider:authorizeProvider,
-//                         oauth_provider:new oauth_example.OAuthDataProvider(db)});  
+function test_correct_no_callback() {
+  // Set up for integration test
+  var site = "http://localhost:3000";
+  var key = "key";
+  var secret = "secret";
+  var callback = "oob";
 
+  // Fetch the request token
+  var url = urlParser.parse("http://localhost:3000/oauth/request_token");
+  // Get the reauest token params
+  var requestTokenParams = { oauth_nonce: new Date().getTime().toString()
+    , oauth_callback: 'oob'
+    , oauth_signature_method: 'HMAC-SHA1'
+    , oauth_timestamp: new Date().getTime().toString()
+    , oauth_consumer_key: key
+    , oauth_version: '1.0'
+  };
+
+  // For the Request Token call
+  var requestSignature = generateSignature('POST', 'http', 'localhost:3000', '/oauth/request_token', requestTokenParams, undefined, secret);
+  var authHeader = 'OAuth oauth_nonce="' + requestTokenParams['oauth_nonce'] + 
+        '", oauth_callback="' + requestTokenParams['oauth_callback'] + '", oauth_signature_method="HMAC-SHA1", oauth_timestamp="' + requestTokenParams['oauth_timestamp'] + '", oauth_consumer_key="' + key + '", oauth_signature="' + requestSignature + '", oauth_version="1.0"';
+
+  // Create the http request token
+  fetchGetUrl('POST', "http://localhost:3000/oauth/request_token", {"host":url.host, "authorization": authHeader}, function(body) {
+    // Unroll the parameters
+    var results = {};
+    var params = body.split(/\&/);
+    params.forEach(function(param) {
+      var parts = param.split(/\=/);
+      results[parts[0]] = parts[1]
+    })
+
+    // Let's get the page
+    var authorizePage = "http://localhost:3000/oauth/authorize?oauth_token=" + results['oauth_token'];
+    // Post the authorization
+    post(authorizePage, {'username':'christkv', 'password':'christkv', 'oauth_token':results['oauth_token']}, {}, function(body) {
+      // Retrieve verifier token string from the html
+      var verifierValue = body.match(/name=\"verifier\" value=\"[a-z|0-9]+\"/)[0].split(/=/)[2].replace(/\"/g, "");
+      var tokenValue = results['oauth_token'];    
+      // Let's execute a post to the url with the values and thus finish the authorization process
+      post(authorizePage, {'oauth_token': tokenValue, 'verifier': verifierValue}, {}, function(body) {
+        // Unpack the token and the new secret token
+        var tokenValue = body.match(/name=\"oauth_token\" value=\"[a-z|0-9]+\"/)[0].split(/=/)[2].replace(/\"/g, "");
+        var verifierValue = body.match(/name=\"oauth_verifier\" value=\"[a-z|0-9]+\"/)[0].split(/=/)[2].replace(/\"/g, "");
+
+        // Build request parameters
+        var accessTokenParams = { oauth_nonce: new Date().getTime().toString()
+          , oauth_signature_method: 'HMAC-SHA1'
+          , oauth_timestamp: new Date().getTime().toString()
+          , oauth_consumer_key: key
+          , oauth_version: '1.0'
+          , oauth_token: tokenValue
+          , oauth_verifier: verifierValue
+        };
+        // Build signature
+        var accessSignature = generateSignature('POST', 'http', 'localhost:3000', '/oauth/access_token', accessTokenParams, results["oauth_token_secret"], secret);
+        // Build auth header
+        var accessAuthHeader = 'OAuth oauth_nonce="' + accessTokenParams['oauth_nonce'] + 
+              '", oauth_signature_method="HMAC-SHA1", oauth_timestamp="' + accessTokenParams['oauth_timestamp'] + '", oauth_consumer_key="' + key + 
+              '", oauth_signature="' + accessSignature + '", oauth_version="1.0", oauth_verifier="' + accessTokenParams['oauth_verifier'] + '", oauth_token="' + accessTokenParams['oauth_token'] + '\"';
+
+        // Time to fetch the access token
+        fetchGetUrl('POST', 'http://localhost:3000/oauth/access_token', {"host":url.host, "authorization": accessAuthHeader}, function(body) {
+          // Split out all the data
+          var params = body.split(/\&/);
+          params.forEach(function(param) {
+            var parts = param.split(/\=/);
+            results[parts[0]] = parts[1]
+          })
+          
+          // Test if we have expected values
+          test.assertTrue(results['oauth_token'] != null);
+          test.assertTrue(results['oauth_token_secret'] != null);
+          test.assertTrue(results['oauth_callback_confirmed'] != null);
+          
+          // Perform an oauth call using the data
+          var callTokenParams = { oauth_nonce: new Date().getTime().toString()
+            , oauth_signature_method: 'HMAC-SHA1'
+            , oauth_timestamp: new Date().getTime().toString()
+            , oauth_consumer_key: key
+            , oauth_version: '1.0'
+            , oauth_token: results['oauth_token']
+          };
+          // Build signature
+          var callSignature = generateSignature('GET', 'http', 'localhost:3000', '/api/geo/list.xml', callTokenParams, results["oauth_token_secret"], secret);
+          // Build auth header
+          var callAuthHeader = 'OAuth oauth_nonce="' + callTokenParams['oauth_nonce'] + 
+                '", oauth_signature_method="HMAC-SHA1", oauth_timestamp="' + callTokenParams['oauth_timestamp'] + '", oauth_consumer_key="' + key + 
+                '", oauth_signature="' + callSignature + '", oauth_version="1.0", oauth_token="' + callTokenParams['oauth_token'] + '\"';
+
+          // Time to fetch the access token
+          fetchGetUrl('GET', 'http://localhost:3000/api/geo/list.xml', {"host":url.host, "authorization": callAuthHeader}, function(body) {
+            test.assertEquals("Done 2", body);
+            testResults.push(test_correct_no_callback);
+          });
+        });
+      });
+    });
+  });  
+}
+
+/***********************************************************************************************************
+ *
+ *  Utility methods used for the tests
+ *
+***********************************************************************************************************/
 var generateSignature = function(method, protocol, url, path, parameters, token, secret) {
   // Create secret key for encryption
   var key = secret + "&" + (token != null ? token : '');
@@ -47,7 +145,6 @@ var fetchGetUrl = function(method, urlString, headers, callback) {
   var request = client.request(method, url.pathname, headers);
   
   request.addListener('response', function (response) {
-    sys.puts("============================= 1");
     var body = '';
     response.setBodyEncoding("utf8");
     response.addListener("data", function (chunk) { body = body + chunk; });
@@ -69,10 +166,6 @@ var post = function(urlString, params, headers, callback) {
   var client = http.createClient(url.port, url.hostname);
   var request = client.request('POST', url.pathname + "?" + paramValues.join("&"), headers);
 
-  // Generate request data
-  // sys.puts(paramValues.join("&"));
-  // request.write(querystring.escape(paramValues.join("&")), 'ascii');  
-  
   request.addListener('response', function (response) {
     var body = '';
     response.setBodyEncoding("utf8");
@@ -83,80 +176,22 @@ var post = function(urlString, params, headers, callback) {
   request.close();            
 };
 
-// Fetch the request token
-var url = urlParser.parse("http://localhost:3000/oauth/request_token");
-// Get the reauest token params
-var requestTokenParams = { oauth_nonce: 'GMvuq48pklaIY1alfYpBOe5aapcKjDfyTRnAtLzjJP4'
-  , oauth_callback: 'http%3A%2F%2Flocalhost%3A9000%2Fcallback'
-  , oauth_signature_method: 'HMAC-SHA1'
-  , oauth_timestamp: '1269517066'
-  , oauth_consumer_key: 'key'
-  , oauth_version: '1.0'
-};
+/***********************************************************************************************************
+ *
+ *  Execution of all tests
+ *
+***********************************************************************************************************/
 
-sys.puts("----------------------------------------");
-sys.puts('POST');
-sys.puts('http');
-sys.puts('localhost:3000');
-sys.puts('/oauth/request_token');
-sys.puts(sys.inspect(requestTokenParams));
-sys.puts(null);
-sys.puts(secret);
-sys.puts("----------------------------------------");
+// Execute methods
+var tests = [test_correct_no_callback];
+tests.forEach(function(test) {
+  test();
+})
 
-// For the Request Token call
-var requestSignature = generateSignature('POST', 'http', 'localhost:3000', '/oauth/request_token', requestTokenParams, undefined, secret);
-var authHeader = 'OAuth oauth_nonce="' + requestTokenParams['oauth_nonce'] + 
-      '", oauth_callback="' + requestTokenParams['oauth_callback'] + '", oauth_signature_method="HMAC-SHA1", oauth_timestamp="' + requestTokenParams['oauth_timestamp'] + '", oauth_consumer_key="' + key + '", oauth_signature="' + requestSignature + '", oauth_version="1.0"';
-
-// Create the http request token
-fetchGetUrl('POST', "http://localhost:3000/oauth/request_token", {"host":url.host, "authorization": authHeader}, function(body) {
-  // Unroll the parameters
-  var results = {};
-  var params = body.split(/\&/);
-  params.forEach(function(param) {
-    var parts = param.split(/\=/);
-    results[parts[0]] = parts[1]
-  })
-  // Let's get the page
-  var authorizePage = "http://localhost:3000/oauth/authorize?oauth_token=" + results['oauth_token'];
-  // Post the authorization
-  post(authorizePage, {'username':'christkv', 'password':'christkv', 'oauth_token':results['oauth_token']}, {}, function(body) {
-    sys.puts(sys.inspect(body));
-  });
-
-  sys.puts(sys.inspect(results));
-});
-
-// Create the http request token method and execute
-// var request = client.request("POST", url.pathname, {"host":url.host, "authorization": authHeader});
-// request.addListener("response", function(response) {
-//   var body = '';
-//   response.setBodyEncoding("utf8");
-//   response.addListener("data", function(chunk) { body = body + chunk; });
-//   response.addListener("end", function() {
-//     // Unroll the parameters
-//     var results = {};
-//     var params = body.split(/\&/);
-//     params.forEach(function(param) {
-//       var parts = param.split(/\=/);
-//       results[parts[0]] = parts[1]
-//     })
-//     
-//     // Let's get the page
-//     var authorizePage = "http://localhost:3000/oauth/authorize?oauth_token=" + results['oauth_token'];
-//     // Fetch the url
-//     
-//     
-//     sys.puts(sys.inspect(results));
-//   })  
-// });
-
-// request.close();
-
+// Finish running tests once all are done
 var intervalId = setInterval(function() {
-  // if(totalParsed == users.length) { 
-  //   clearInterval(intervalId);
-  //   db.close();
-  // }
+  if(testResults.length == tests.length) {
+    clearInterval(intervalId);
+  }
 }, 100);
+
