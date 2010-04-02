@@ -137,11 +137,6 @@ OAuthDataProvider.prototype.validateNotReplay = function(accessToken, timestamp,
 OAuthDataProvider.prototype.authenticateUser = function(username, password, oauthToken, callback) {
   var self = this;    
   
-  sys.puts("==== OAuthDataProvider.prototype.authenticateUser");
-  sys.puts("username = " + username);
-  sys.puts("password = " + password);
-  sys.puts("oauthToken = " + oauthToken);
-  
   self.db.collection('users', function(err, collection) {
     var encodedPassword = MD5.hex_md5(password);
     collection.findOne({'username':username, 'password':encodedPassword}, function(err, user) {      

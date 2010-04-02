@@ -84,9 +84,7 @@ configure(function(){
   **/
   var authorizationFinishedProvider = function(err, result) {
     var self = this;
-    sys.puts("var authorizationFinishedProvider = function(err, result) {");
-    sys.puts(sys.inspect(result));
-    
+
     this.render('authorization_finished.haml.html', {
       locals: {
         flashes: self.flash('info'),
@@ -116,8 +114,6 @@ configure(function(){
   Awesome methods
 **/
 oauth_get('/api/geo/list:format?', function(format) {
-  sys.puts("=================== format: " + format);
-  // sys.puts(sys.inspect(this));
   this.halt(200, "Done 2");
 });
 
