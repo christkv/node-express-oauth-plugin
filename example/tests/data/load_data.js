@@ -19,7 +19,7 @@ var mongo = require('mongodb'),
 
 
 // Create the connection
-new mongo.Db('oauth_example', new mongo.Server("127.0.0.1", 27017, {}, {})).open(function(db) {
+new mongo.Db('oauth_example', new mongo.Server("127.0.0.1", 27017, {}, {})).open(function(err, db) {
   // fetch a user
   db.collection('oauth_applications', function(err, collection) {
     collection.findOne({'consumer_key':'key'}, function(err, doc) {
