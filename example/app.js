@@ -1,9 +1,10 @@
 require.paths.unshift('lib');
 require.paths.unshift('../lib');
+require.paths.unshift('/Users/christian.kvalheim/coding/checkouts/express/lib');
 
 // Require the kiwi package manager
 var kiwi = require('kiwi'),
-  express = kiwi.require('express'),
+  // express = kiwi.require('express'),
   sys = require('sys'),
   querystring = require('querystring');
   
@@ -39,7 +40,7 @@ configure(function(){
     Handle the rendering of the form for the user to authenticate the oauth session
   **/
   var authenticateProvider = function() {    
-    this.render('authenticate.haml.html', {
+    this.render('authenticate.html.haml', {
       locals: {
         flashes: this.flash('info'),
         token: this.param('oauth_token')
@@ -56,7 +57,7 @@ configure(function(){
       
     if(err) {
       // If there's an authorization error redirect to initial login page
-      this.render('authenticate.haml.html', {
+      this.render('authenticate.html.haml', {
         locals: {
           flashes: ['No such user or wrong password'],
           token: authResults.token
@@ -64,7 +65,7 @@ configure(function(){
       });
     } else {      
       // the services layer provides authorization support as well
-      self.render('authorize.haml.html', {
+      self.render('authorize.html.haml', {
         locals: {
           flashes: self.flash('info'),
           token: authResults.token,
@@ -82,7 +83,7 @@ configure(function(){
   var authorizationFinishedProvider = function(err, result) {
     var self = this;
 
-    this.render('authorization_finished.haml.html', {
+    this.render('authorization_finished.html.haml', {
       locals: {
         flashes: self.flash('info'),
         token: result.token,
@@ -122,7 +123,7 @@ get('/public/*', function(file){
 })
 
 get('/*.css', function(file){
-  this.render(file + '.sass.css', { layout: false })
+  this.render(file + '.css.sass', { layout: false })
 })
 
 run()

@@ -3,19 +3,14 @@ require.paths.unshift('../../external-libs');
 
 // Require the kiwi package manager
 var kiwi = require('kiwi'),
-  express = kiwi.require('express'),
   sys = require('sys')
-
-// Require the express libary
-require('express');
-require('express/plugins');
 
 // Initialize the seeds  
 kiwi.seed('mongodb-native');
 
 // Fetch the library records
 var mongo = require('mongodb'),
-  MD5 = require('mongodb/crypto/md5');
+  MD5 = mongo.MD5;
 
 
 // Create the connection
