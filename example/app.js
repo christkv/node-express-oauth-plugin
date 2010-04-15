@@ -1,10 +1,10 @@
 require.paths.unshift('lib');
 require.paths.unshift('../lib');
-require.paths.unshift('/Users/christian.kvalheim/coding/checkouts/express/lib');
+// require.paths.unshift('/Users/christian.kvalheim/coding/checkouts/express/lib');
 
 // Require the kiwi package manager
 var kiwi = require('kiwi'),
-  // express = kiwi.require('express'),
+  express = kiwi.require('express'),
   sys = require('sys'),
   querystring = require('querystring');
   

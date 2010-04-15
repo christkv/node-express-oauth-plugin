@@ -1,11 +1,8 @@
 require.paths.unshift('../../../lib');
-require.paths.unshift('/Users/christian.kvalheim/coding/checkouts/express/lib');
-
-// Require the express libary
-require('express');
-require('express/plugins');
+// require.paths.unshift('/Users/christian.kvalheim/coding/checkouts/express/lib');
 
 var kiwi = require('kiwi'),
+  express = kiwi.require('express'),
   http = require('http'), 
   urlParser = require('url'),
   sys = require('sys'),
@@ -13,6 +10,10 @@ var kiwi = require('kiwi'),
   querystring = require('querystring'),
   crypto = require('oauth/crypto/sha1'), 
   test = require("mjsunit");
+
+// Require the express libary
+require('express');
+require('express/plugins');
 
 // Contains all the results
 var testResults = [];
