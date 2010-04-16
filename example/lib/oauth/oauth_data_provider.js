@@ -134,6 +134,19 @@ OAuthDataProvider.prototype.validateNotReplay = function(accessToken, timestamp,
   callback(null, true);
 }
 
+/**
+  Fetch user id based on token (used to identify user in oauth calls later)
+**/
+OAuthDataProvider.prototype.userIdByToken = function(token, callback) {
+  var self = this;    
+
+  self.db.collection('oauth_users_request_tokens', function(err, collection) {
+    collection.findOne({'access_token':token}, function(err, tokenEntry) {
+      callback(null, {id:tokenEntry.username});
+    });
+  });  
+}
+
 OAuthDataProvider.prototype.authenticateUser = function(username, password, oauthToken, callback) {
   var self = this;    
   

@@ -2,7 +2,7 @@
   name: node-express-oauth-plugin
   description: Express plugin to allow for oauth api writing
   tags: express oauth server plugin
-  version: 0.0.2
+  version: 0.0.3
   dependencies:
       - express >= 0.9.0
       - mongodb-native >= 0.7.0

@@ -111,7 +111,7 @@ configure(function(){
 /**
   Awesome methods
 **/
-oauth_get('/api/geo/list:format?', function(format) {
+oauth_get('/api/geo/list:format?', function(user_id, format) {
   this.halt(200, "Done 2");
 });
 
